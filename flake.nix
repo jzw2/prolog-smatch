@@ -13,7 +13,10 @@
           scryer-prolog
           fish
         ];
-        shell = pkgs.fish;
+        shellHook = ''
+exec fish
+
+'';
       };
     }
   );
