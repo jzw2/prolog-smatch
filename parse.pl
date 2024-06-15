@@ -3,6 +3,7 @@
 :- use_module(library(dcgs)).
 :- use_module(library(lists)).
 :- use_module(library(format)).
+:- use_module(library(pio)).
 
 a(a) --> [a].
 a(b) --> [b].
@@ -32,27 +33,39 @@ relation(relation(R, A, V)) --> role(R),
                                     (atom(V) % I'm going to ignore the alignment for now
                                       , ([] | alignment(_))
                                     )) .
+relation_star([]) --> [].
+relation_star([X | Rest]) --> relation(X), relation_star(Rest) .
 atom(atom(X)) --> variable(X) | constant(X).
 constant(constant(X)) --> string(X) | symbol(X).
 variable(variable(X)) --> symbol(X).
 
-symbol([X | Rest]) --> name_char(X), name_char_star(Rest).
-role(X) --> [':'], name_char_star(X).
+
+symbol(symbol([X | Rest])) --> name_char(X), name_char_star(Rest).
+role(role(X)) --> [':'], name_char_star(X).
 % cannot find where alignement is being used
 % alignment() --> ['~'], ((alphanum(X), (['.'] | [] ))   | []), digit_plus, comma_digit_star.
-alignment(X) --> ['~'],
+alignment(alignment(X)) --> ['~'],
                 ((alphanum(X), (['.'] | [] ))   | []),
                 digit_plus(X),
                 comma_digit_star.
-string(X) --> ['"'], seq(X), {maplist(\=('\n'), X)}, ['"'].
-name_char(X) --> [X], { \+ member(X, " \n\t\r\f\v()/:~")} .
+string(string(X)) --> ['"'], seq(X), {maplist(\=('\"'), X)}, ['"'].
+name_char(X) --> [X], { \+ member(X, " \n\t\r\f\v()/:~\"")} .
+name_char_star([X | Rest]) --> name_char(X), !,  name_char_star(Rest).
 name_char_star([]) --> [].
-name_char_star([X | Rest]) --> name_char(X), name_char_star(Rest).
 
 digit(X) --> [X], { member(X, "1234567890")} .
 
 
+lex([]) --> [].
+lex(X) --> ([' '] | ['\n']), lex(X).
+lex([X | Rest]) --> (string(X) | alignment(X) | role(X) | symbol(X) | [X], { member(X, "/()") }), lex(Rest).
 
+
+
+sent1("(w / want-01 :ARG0 (b / boy) :ARG1 (b2 / believe-01 :ARG0 (g / girl) :ARG1 b))").
+
+sent2("(p / person :domain (b / boy) :ARG0-of (w / work-01 :manner (h / hard)))").
+test1(L) :- phrase_from_file(remove_comments(Y), "test_input1.txt"), phrase(lex(L), Y).
 
 
 
