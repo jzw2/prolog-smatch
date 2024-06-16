@@ -65,7 +65,13 @@ sent1("(w / want-01 :ARG0 (b / boy) :ARG1 (b2 / believe-01 :ARG0 (g / girl) :ARG
 
 sent2("(p / person :domain (b / boy) :ARG0-of (w / work-01 :manner (h / hard)))").
 sent3(" (b / bear-02 :ARG1 (p / poet :name (n / name :op1 \"William\" :op2 \"Shakespeare\")) :location (c / city :name (n2 / name :op1 \"Stratford-upon-Avon\"))) ").
+
+
 test1(L) :- phrase_from_file(remove_comments(Y), "test_input1.txt"), phrase(lex(L), Y).
+amr_parse_from_file(File, Tree) :-
+    phrase_from_file(remove_comments(NoComments), File),
+    phrase(lex(Lex), NoComments),
+    phrase(star(node, Tree), Lex).
 
 
 
