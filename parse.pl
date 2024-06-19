@@ -5,12 +5,12 @@
 :- use_module(library(format)).
 :- use_module(library(pio)).
 
-a(a) --> [a].
-a(b) --> [b].
 
 remove_comments([]) --> [].
 remove_comments([X | Rest]) --> [X], { X \= '#' }, remove_comments(Rest).
-remove_comments(Rest) --> ['#'], seq(A), {maplist(\=('\n'), A)},  ['\n'], remove_comments(Rest).
+remove_comments(Rest) --> ['#'], star(not('\n'), _),  ['\n'], remove_comments(Rest).
+
+not(X, Y) --> [Y], {X \= Y}.
 
 star(_, []) --> [].
 star(A, [X | Rest]) --> call(A, X), star(A, Rest).
@@ -48,7 +48,7 @@ alignment(alignment(X)) --> ['~'],
                 ((alphanum(X), (['.'] | [] ))   | []),
                 digit_plus(X),
                 comma_digit_star.
-string(string(X)) --> ['"'], seq(X), {maplist(\=('\"'), X)}, ['"'].
+string(string(X)) --> ['"'], star(not('"'), X), ['"'].
 name_char(X) --> [X], { \+ member(X, " \n\t\r\f\v()/:~\"")} .
 name_char_star([X | Rest]) --> name_char(X), !,  name_char_star(Rest).
 name_char_star([]) --> [].
