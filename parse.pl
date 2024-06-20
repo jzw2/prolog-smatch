@@ -25,7 +25,7 @@ node(node(V, Label, R)) --> ['('], variable(V),
                                | ([], {Label = none})),
                             relation_star(R), [')'].
 nodelabel(label(C, A)) --> ['/'], concept(C), (alignment(A) | ([], {A = none})).
-concept(concept(C)) --> constant(C).
+concept(C) --> constant(C).
 relation(relation(R, A, V)) --> [role(R)],
                                 (alignment(A)
                                    | ([], {A = none})),
@@ -72,6 +72,17 @@ amr_parse_from_file(File, Tree) :-
     phrase_from_file(remove_comments(NoComments), File),
     phrase(lex(Lex), NoComments),
     phrase(star(node, Tree), Lex).
+
+
+
+triple_relations(Left, relation(Name, _, RelationTarget), [triple(Left, Name, Right) | Rest]) :-
+    (RelationTarget = node(Right, _, _), triples(RelationTarget, Rest)) ;
+    (RelationTarget = atom(Right), Rest = []).
+
+triples(node(variable(V), label(Label, _), Relations), [triples(V, instance, Label) | FlattenTriples]) :-
+  maplist(triple_relations(V), Relations, Triples),
+  foldl(append, Triples, [], FlattenTriples).
+
 
 
 
