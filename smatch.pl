@@ -1,6 +1,7 @@
 :- use_module(parse).
 :- use_module(library(lists)).
 :- use_module(library(ordsets)).
+:- use_module(library(debug)).
 
 boy1(X) :- triples_from_file("boy1.txt", X).
 boy2(X) :- triples_from_file("boy2.txt", X).
@@ -31,7 +32,45 @@ precision(Left, Right, Score) :-
 
 recall(Left, Right, Score) :- precision(Right, Left, Score).
 
-f1(Left, Right, Score) :-
+f1(UnsortedLeft, UnsortedRight, Score) :-
+    sort(UnsortedLeft, Left),
+    sort(UnsortedRight, Right),
     precision(Left, Right, P),
     recall(Left, Right, R),
-    Score is 2 * (P * R) / (P + R).
+    (P = 0.0, R = 0.0 -> Score = 0;
+    Score is 2 * (P * R) / (P + R)).
+
+
+apply_left(triple(X, Mid, Right), X, Y, triple(Y, Mid, Right)).
+apply_right(triple(Left, Mid, variable(X)), X, Y, triple(Left, Mid, variable(Y))).
+% apply a single triple to a single substiution
+apply_single(Mapping, Old, New) :-
+    member(X-Y, Mapping),
+    (apply_left(Old, X, Y, Mid) ; apply_right(Old, X, Y, Mid)), !, apply_single(Mapping, Mid, New).
+apply_single(_, Old, Old). % remember the cut
+
+
+apply_mapping(Old, Mapping, New) :-
+    maplist(apply_single(Mapping), Old, New).
+
+
+name_space_triple(Name, triple(V1, Middle, constant(V2)), triple(NewV1, Middle, constant(V2))) :-
+    NewV1 =.. [Name, V1].
+name_space_triple(Name, triple(V1, Middle, variable(V2)), triple(NewV1, Middle, variable(NewV2))) :-
+    NewV1 =.. [Name, V1],
+    NewV2 =.. [Name, V2].
+
+name_space_triples(Left, Right, NewLeft, NewRight) :-
+    maplist(name_space_triple(left), Left, NewLeft),
+    maplist(name_space_triple(right), Right, NewRight).
+
+smatch(Left, Right, Score) :-
+    name_space_triples(Left, Right, NamedLeft, NamedRight),
+    variables(NamedLeft, LeftVariables),
+    variables(NamedRight, RightVariables),
+    var_mapping(LeftVariables, RightVariables,_), !, % make sure its teh right direction
+    findall(M, var_mapping(LeftVariables, RightVariables, M), Mappings),
+
+    maplist(apply_mapping(NamedLeft), Mappings, AppliedTriples),
+    maplist(f1(NamedRight), AppliedTriples, F1s),
+    list_max(F1s, Score).
