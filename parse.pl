@@ -84,6 +84,11 @@ triples(node(variable(V), label(Label, _), Relations), [triples(V, instance, Lab
   foldl(append, Triples, [], FlattenTriples).
 
 
+triples_from_file(File, Triples) :-
+    amr_parse_from_file(File, Tree),
+    maplist(triples, Tree, Triples).
+
+
 
 
 
