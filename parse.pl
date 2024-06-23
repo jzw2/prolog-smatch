@@ -1,3 +1,5 @@
+:- module(parse, [triples_from_file/2]).
+
 :- set_prolog_flag(double_quotes, chars).
 
 :- use_module(library(dcgs)).
