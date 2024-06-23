@@ -1,0 +1,6 @@
+( a / want-01
+   :ARG0 (b / boy)
+   :ARG1 (c / go-01
+         :ARG0 b
+         )
+)

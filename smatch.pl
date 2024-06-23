@@ -1,4 +1,5 @@
 :- use_module(parse).
 
 
-stuff :- triples_from_file("test_input1.txt", X), write(X).
+boy1(X) :- triples_from_file("boy1.txt", X).
+boy2(X) :- triples_from_file("boy2.txt", X).

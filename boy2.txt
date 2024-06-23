@@ -1,0 +1,4 @@
+( x / want-01
+  :ARG0 (y / boy)
+  :ARG1 (z / football)
+)
