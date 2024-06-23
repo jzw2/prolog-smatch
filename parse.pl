@@ -81,7 +81,7 @@ triple_relations(Left, relation(Name, _, RelationTarget), [triple(Left, Name, Ri
     (RelationTarget = node(Right, _, _), triples(RelationTarget, Rest)) ;
     (RelationTarget = atom(Right), Rest = []).
 
-triples(node(variable(V), label(Label, _), Relations), [triples(V, instance, Label) | FlattenTriples]) :-
+triples(node(variable(V), label(Label, _), Relations), [triple(V, instance, Label) | FlattenTriples]) :-
   maplist(triple_relations(V), Relations, Triples),
   foldl(append, Triples, [], FlattenTriples).
 
