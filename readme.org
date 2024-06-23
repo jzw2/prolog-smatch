@@ -1,3 +1,16 @@
 #+title: Readme
 
 Smatch score in prolog
+
+* Run instructions
+Get a copy of [[https://github.com/mthom/scryer-prolog][scryer prolog]], which you can download from its github releases.
+
+(Alternatively, if you use nix, you can just do =nix develop=) and it will automatically install it for you.
+
+Currently, the only example is "The boy want to go" from the smatch paper, which is in =boy1.txt= and =boy2.txt=.
+
+To run this example, run
+
+#+begin_src
+?- boy1([X]), boy2([Y]), smatch(X, Y, Score).
+#+end_src
