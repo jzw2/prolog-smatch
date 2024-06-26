@@ -2,6 +2,7 @@
 :- use_module(library(lists)).
 :- use_module(library(ordsets)).
 :- use_module(library(debug)).
+:- use_module(library(format)).
 
 boy1(X) :- triples_from_file("boy1.txt", X).
 boy2(X) :- triples_from_file("boy2.txt", X).
@@ -73,4 +74,17 @@ smatch(Left, Right, Score) :-
 
     maplist(apply_mapping(NamedLeft), Mappings, AppliedTriples),
     maplist(f1(NamedRight), AppliedTriples, F1s),
-    list_max(F1s, Score).
+    list_max(F1s, Score),
+    % debug info
+    nth0(Index, F1s, Score),
+    nth0(Index, Mappings, Map),
+    nth0(Index, AppliedTriples, MappedAnswer),
+    length(MappedAnswer, MappedLength),
+    length(NamedRight, RightLength),
+    * format("Mapping ~w,  ~n, which resulted in ~w, ~w ~n", [Map, MappedLength, RightLength]).
+smatch(Left, Right, Score) :- smatch(Right, Left, Score) .
+
+compare_files(File1, File2, Scores) :-
+    triples_from_file(File1, Triples1),
+    triples_from_file(File2, Triples2),
+    maplist(smatch, Triples1, Triples2, Scores).
