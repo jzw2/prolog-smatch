@@ -7,10 +7,20 @@ Get a copy of [[https://github.com/mthom/scryer-prolog][scryer prolog]], which y
 
 (Alternatively, if you use nix, you can just do =nix develop=) and it will automatically install it for you.
 
-Currently, the only example is "The boy want to go" from the smatch paper, which is in =boy1.txt= and =boy2.txt=.
+Load the file with
+#+begin_src
+scryer-prolog smatch.pl
+#+end_src
 
-To run this example, run
+Currently the only examples are the boy example from the original smatch paper, and =test_input1= from =mtool=
+
 
 #+begin_src
-?- boy1([X]), boy2([Y]), smatch(X, Y, Score).
+?- compare_files("boy1.txt", "boy2.txt", X).
 #+end_src
+
+
+* Test data sources
+[[https://github.com/snowblink14/smatch][smatch]]
+
+[[https://github.com/cfmrp/mtool][Mtool]]
