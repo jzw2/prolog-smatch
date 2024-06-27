@@ -1,4 +1,4 @@
-:- module(parse, [triples_from_file/2]).
+% :- module(parse, [triples_from_file/2]).
 
 :- set_prolog_flag(double_quotes, chars).
 
@@ -8,9 +8,6 @@
 :- use_module(library(pio)).
 
 
-remove_comments([]) --> [].
-remove_comments([X | Rest]) --> [X], { X \= '#' }, remove_comments(Rest).
-remove_comments(Rest) --> ['#'], star(not('\n'), _),  ['\n'], remove_comments(Rest).
 
 not(X, Y) --> [Y], {X \= Y}.
 
@@ -57,9 +54,11 @@ name_char_star([]) --> [].
 
 digit(X) --> [X], { member(X, "1234567890")} .
 
+comment --> ['#'], star(not('\n'), _), ['\n'].
+
 
 lex([]) --> [].
-lex(X) --> ([' '] | ['\n']), lex(X).
+lex(X) --> ([' '] | ['\n'] | comment), lex(X).
 lex([X | Rest]) --> (string(X) | alignment(X) | role(X) | symbol(X) | [X], { member(X, "/()") }), lex(Rest).
 
 
@@ -69,10 +68,8 @@ sent2("(p / person :domain (b / boy) :ARG0-of (w / work-01 :manner (h / hard)))"
 sent3(" (b / bear-02 :ARG1 (p / poet :name (n / name :op1 \"William\" :op2 \"Shakespeare\")) :location (c / city :name (n2 / name :op1 \"Stratford-upon-Avon\"))) ").
 
 
-test1(L) :- phrase_from_file(remove_comments(Y), "test_input1.txt"), phrase(lex(L), Y).
 amr_parse_from_file(File, Tree) :-
-    phrase_from_file(remove_comments(NoComments), File),
-    phrase(lex(Lex), NoComments),
+    phrase_from_file(lex(Lex), File),
     phrase(star(node, Tree), Lex).
 
 
