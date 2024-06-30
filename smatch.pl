@@ -4,9 +4,6 @@
 :- use_module(library(debug)).
 :- use_module(library(format)).
 
-boy1(X) :- triples_from_file("boy1.txt", X).
-boy2(X) :- triples_from_file("boy2.txt", X).
-
 
 var_in_triples(Triples, X) :-
     member(triple(X, _, _), Triples) ;
@@ -14,6 +11,7 @@ var_in_triples(Triples, X) :-
 
 
 var_mapping(_, [], []).
+var_mapping([], _, []).
 var_mapping(Domain, [Y | RangeRest], [X-Y | Rest]) :-
     select(X, Domain, DomainRest),
     var_mapping(DomainRest, RangeRest, Rest).
@@ -69,8 +67,8 @@ smatch(Left, Right, Score) :-
     name_space_triples(Left, Right, NamedLeft, NamedRight),
     variables(NamedLeft, LeftVariables),
     variables(NamedRight, RightVariables),
-    var_mapping(LeftVariables, RightVariables,_), !, % make sure its teh right direction
-    findall(M, var_mapping(LeftVariables, RightVariables, M), Mappings),
+    $ var_mapping(LeftVariables, RightVariables,_), !, % make sure its teh right direction
+    $ findall(M, var_mapping(LeftVariables, RightVariables, M), Mappings),
 
     maplist(apply_mapping(NamedLeft), Mappings, AppliedTriples),
     maplist(f1(NamedRight), AppliedTriples, F1s),
@@ -81,10 +79,22 @@ smatch(Left, Right, Score) :-
     nth0(Index, AppliedTriples, MappedAnswer),
     length(MappedAnswer, MappedLength),
     length(NamedRight, RightLength),
-    * format("Mapping ~w,  ~n, which resulted in ~w, ~w ~n", [Map, MappedLength, RightLength]).
+    format("Mapping ~w,  ~n, which resulted in ~w, ~w ~n", [Map, MappedLength, RightLength]).
 smatch(Left, Right, Score) :- smatch(Right, Left, Score) .
 
 compare_files(File1, File2, Scores) :-
     triples_from_file(File1, Triples1),
     triples_from_file(File2, Triples2),
     maplist(smatch, Triples1, Triples2, Scores).
+
+constraint(left, V, SumVar, c(V, SumVar)).
+constraint(right, V, SumVar, c(SumVar, V)).
+
+sum_constraints(Direction, OtherVariables, V, constraint(ConstrainedVars =< 1)) :-
+    maplist(constraint(Direction, V), OtherVariables, ConstrainedVars).
+
+
+variables_constraints(LeftVariables, RightVariables, Constraints) :-
+    maplist(sum_constraints(left, RightVariables), LeftVariables, ConstraintsA),
+    maplist(sum_constraints(right, LeftVariables), RightVariables, ConstraintsB),
+    append(ConstraintsA, ConstraintsB, Constraints).
