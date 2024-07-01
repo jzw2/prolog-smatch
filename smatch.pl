@@ -3,6 +3,8 @@
 :- use_module(library(ordsets)).
 :- use_module(library(debug)).
 :- use_module(library(format)).
+:- use_module(library(dif)).
+:- use_module(library(reif)).
 
 
 var_in_triples(Triples, X) :-
@@ -87,14 +89,52 @@ compare_files(File1, File2, Scores) :-
     triples_from_file(File2, Triples2),
     maplist(smatch, Triples1, Triples2, Scores).
 
-constraint(left, V, SumVar, c(V, SumVar)).
-constraint(right, V, SumVar, c(SumVar, V)).
+constraint(left, V, SumVar, v(V, SumVar)).
+constraint(right, V, SumVar, v(SumVar, V)).
 
 sum_constraints(Direction, OtherVariables, V, constraint(ConstrainedVars =< 1)) :-
     maplist(constraint(Direction, V), OtherVariables, ConstrainedVars).
-
 
 variables_constraints(LeftVariables, RightVariables, Constraints) :-
     maplist(sum_constraints(left, RightVariables), LeftVariables, ConstraintsA),
     maplist(sum_constraints(right, LeftVariables), RightVariables, ConstraintsB),
     append(ConstraintsA, ConstraintsB, Constraints).
+
+
+
+pair(X, Y, X - Y).
+
+cartesian_one_side(Vars, Const, Out) :-
+    maplist(pair(Const), Vars, Out).
+
+cartesian(X, Y, XY) :-
+     maplist(cartesian_one_side(Y), X, Matrix),
+     foldl(append, Matrix, [], XY).
+
+
+
+same_relation_t(triple(_, R1, X) - triple(_, R2, Y), B) :-
+    call((R1 = R2,
+          (X = variable(_), Y = variable(_) ;
+           X = atom(C1), Y = atom(C2), C1 = C2)), B).
+
+left_vars_constraint(Pair, constraint([t(Pair)] =< v(X, W))) :-
+    Pair = triple(X, _, _) - triple(W, _, _).
+
+right_vars_constraints([], []).
+right_vars_constraints([Pair | Rest], [RetPair | RetRest]) :-
+    Pair = triple(_, _, variable(Y)) - triple(_, _, variable(Z)),
+    RetPair = constraint([t(Pair) =< v(Y, Z)]),
+    right_vars_constraints(Rest, RetRest).
+right_vars_constraints([Pair | Rest] , Ret) :-
+    (Pair = triple(_, _, atom(_)) - _ ;
+    Pair = _ - triple(_, _, atom(_))),
+    right_vars_constraints(Rest, Ret).
+
+
+triple_constraints(TriplesA, TriplesB, Constraints) :-
+    cartesian(TriplesA, TriplesB, Product),
+    tfilter(same_relation_t, Product, SameRelation),
+    maplist(left_vars_constraint, SameRelation, LeftConstraints),
+    right_vars_constraints(SameRelation, RightConstraints),
+    append(LeftConstraints, RightConstraints, Constraints).
