@@ -5,6 +5,7 @@
 :- use_module(library(format)).
 :- use_module(library(dif)).
 :- use_module(library(reif)).
+:- use_module(library(simplex)).
 
 
 var_in_triples(Triples, X) :-
@@ -89,11 +90,11 @@ compare_files(File1, File2, Scores) :-
     triples_from_file(File2, Triples2),
     maplist(smatch, Triples1, Triples2, Scores).
 
-constraint(left, V, SumVar, v(V, SumVar)).
-constraint(right, V, SumVar, v(SumVar, V)).
+constraint_dir(left, V, SumVar, v(V, SumVar)).
+constraint_dir(right, V, SumVar, v(SumVar, V)).
 
 sum_constraints(Direction, OtherVariables, V, constraint(ConstrainedVars =< 1)) :-
-    maplist(constraint(Direction, V), OtherVariables, ConstrainedVars).
+    maplist(constraint_dir(Direction, V), OtherVariables, ConstrainedVars).
 
 variables_constraints(LeftVariables, RightVariables, Constraints) :-
     maplist(sum_constraints(left, RightVariables), LeftVariables, ConstraintsA),
@@ -129,17 +130,18 @@ same_relation_t(triple(_, R1, X) - triple(_, R2, Y), B) :-
           InnerX = InnerY
             ), B).
 
-left_vars_constraint(Pair, constraint([t(Pair)] =< v(X, W))) :-
+left_vars_constraint(Pair, constraint([t(Pair), -1 * v(X, W)] =< 0)) :-
     Pair = triple(X, _, _) - triple(W, _, _).
 
 right_vars_constraints([], []).
 right_vars_constraints([Pair | Rest], [RetPair | RetRest]) :-
     Pair = triple(_, _, variable(Y)) - triple(_, _, variable(Z)),
-    RetPair = constraint([t(Pair) =< v(Y, Z)]),
+    RetPair = constraint([t(Pair), -1 * v(Y, Z)] =< 0),
     right_vars_constraints(Rest, RetRest).
 right_vars_constraints([Pair | Rest] , Ret) :-
     (Pair = triple(_, _, constant(_)) - triple(_, _, constant(_))),
     right_vars_constraints(Rest, Ret).
+
 
 
 triple_constraints(TriplesA, TriplesB, Constraints) :-
@@ -148,3 +150,14 @@ triple_constraints(TriplesA, TriplesB, Constraints) :-
     maplist(left_vars_constraint, SameRelation, LeftConstraints),
     right_vars_constraints(SameRelation, RightConstraints),
     append(LeftConstraints, RightConstraints, Constraints).
+
+my_call(Constraint, Old, New) :-
+    write("doing stuff now"), nl,
+    call(Constraint, Old, New).
+
+solve_constraints(TriplesA, TriplesB, Solved) :-
+    gen_state(S0),
+    variables_constraints(TriplesA, TriplesB, Var),
+    triple_constraints(TriplesA, TriplesB, Triple),
+    append(Triple, Var, All),
+    foldl(my_call, All, S0, Solved).
