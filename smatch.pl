@@ -113,10 +113,22 @@ cartesian(X, Y, XY) :-
 
 
 
+% code kind of spaghetti, but basically, since I wanted to use tfilter
+% I have to refeify it ,and I also have to split on the cases where
+% constants either match or don't match
 same_relation_t(triple(_, R1, X) - triple(_, R2, Y), B) :-
+    (X = variable(_) ; X = constant(_)),
+    (Y = variable(_) ; Y = constant(_)),
+    X =.. [TypeX, ArgX],
+    Y =.. [TypeY, ArgY],
+    (TypeX = variable, TypeY = variable, InnerX = InnerY ;
+     (TypeX = constant, TypeY = constant ; dif(TypeX, TypeY)) , InnerX = ArgX, InnerY= ArgY
+     ),
     call((R1 = R2,
-          (X = variable(_), Y = variable(_) ;
-           X = atom(C1), Y = atom(C2), C1 = C2)), B).
+          TypeX = TypeY,
+          ArgX = ArgY,
+          InnerX = InnerY
+            ), B).
 
 left_vars_constraint(Pair, constraint([t(Pair)] =< v(X, W))) :-
     Pair = triple(X, _, _) - triple(W, _, _).
@@ -127,8 +139,8 @@ right_vars_constraints([Pair | Rest], [RetPair | RetRest]) :-
     RetPair = constraint([t(Pair) =< v(Y, Z)]),
     right_vars_constraints(Rest, RetRest).
 right_vars_constraints([Pair | Rest] , Ret) :-
-    (Pair = triple(_, _, atom(_)) - _ ;
-    Pair = _ - triple(_, _, atom(_))),
+    (Pair = triple(_, _, constant(_)) - _ ;
+    Pair = _ - triple(_, _, constant(_))),
     right_vars_constraints(Rest, Ret).
 
 
