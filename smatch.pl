@@ -130,13 +130,13 @@ same_relation_t(triple(_, R1, X) - triple(_, R2, Y), B) :-
           InnerX = InnerY
             ), B).
 
-left_vars_constraint(Pair, constraint([t(Pair), -1 * v(X, W)] =< 0)) :-
+left_vars_constraint(Pair, constraint([Pair, -1 * v(X, W)] =< 0)) :-
     Pair = triple(X, _, _) - triple(W, _, _).
 
 right_vars_constraints([], []).
 right_vars_constraints([Pair | Rest], [RetPair | RetRest]) :-
     Pair = triple(_, _, variable(Y)) - triple(_, _, variable(Z)),
-    RetPair = constraint([t(Pair), -1 * v(Y, Z)] =< 0),
+    RetPair = constraint([Pair, -1 * v(Y, Z)] =< 0),
     right_vars_constraints(Rest, RetRest).
 right_vars_constraints([Pair | Rest] , Ret) :-
     (Pair = triple(_, _, constant(_)) - triple(_, _, constant(_))),
@@ -144,7 +144,7 @@ right_vars_constraints([Pair | Rest] , Ret) :-
 
 
 
-triple_constraints(TriplesA, TriplesB, Constraints) :-
+triple_constraints(TriplesA, TriplesB, Constraints, SameRelation) :-
     cartesian(TriplesA, TriplesB, Product),
     tfilter(same_relation_t, Product, SameRelation),
     maplist(left_vars_constraint, SameRelation, LeftConstraints),
@@ -152,12 +152,20 @@ triple_constraints(TriplesA, TriplesB, Constraints) :-
     append(LeftConstraints, RightConstraints, Constraints).
 
 my_call(Constraint, Old, New) :-
-    write("doing stuff now"), nl,
+    % write("doing stuff now"), nl,
     call(Constraint, Old, New).
 
-solve_constraints(TriplesA, TriplesB, Solved) :-
-    gen_state(S0),
-    variables_constraints(TriplesA, TriplesB, Var),
-    triple_constraints(TriplesA, TriplesB, Triple),
+
+
+solve_constraints(TriplesA, TriplesB, NumMatches) :-
+    variables(TriplesA, VarsA),
+    variables(TriplesB, VarsB),
+    variables_constraints(VarsA, VarsB, Var),
+    triple_constraints(TriplesA, TriplesB, Triple, MaximizeVars),
     append(Triple, Var, All),
-    foldl(my_call, All, S0, Solved).
+    gen_state(S0),
+    foldl(call, All, S0, Folded),
+    maximize(MaximizeVars, Folded, Max),
+    maplist(variable_value(Max), MaximizeVars, SolvedVals),
+    sum_list(SolvedVals, NumMatches)
+    .
