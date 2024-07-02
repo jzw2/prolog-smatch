@@ -30,17 +30,22 @@ intersection(Left, Right, Amount) :-
 precision(Left, Right, Score) :-
     intersection(Left, Right, Numerator),
     length(Left, Denominator),
-    Score is Numerator / Denominator.
+    Score is Numerator rdiv Denominator.
 
 recall(Left, Right, Score) :- precision(Right, Left, Score).
+
+f1_formula(0, 0, 0).
+f1_formula(P, R, Score) :-
+    dif(P, 0), dif(R, 0),
+    Score is 2 * (P * R) rdiv (P + R).
+
 
 f1(UnsortedLeft, UnsortedRight, Score) :-
     sort(UnsortedLeft, Left),
     sort(UnsortedRight, Right),
     precision(Left, Right, P),
     recall(Left, Right, R),
-    (P = 0.0, R = 0.0 -> Score = 0;
-    Score is 2 * (P * R) / (P + R)).
+    f1_formula(P, R, Score).
 
 
 apply_left(triple(X, Mid, Right), X, Y, triple(Y, Mid, Right)).
@@ -66,7 +71,7 @@ name_space_triples(Left, Right, NewLeft, NewRight) :-
     maplist(name_space_triple(left), Left, NewLeft),
     maplist(name_space_triple(right), Right, NewRight).
 
-smatch(Left, Right, Score) :-
+smatch_dumb(Left, Right, Score) :-
     name_space_triples(Left, Right, NamedLeft, NamedRight),
     variables(NamedLeft, LeftVariables),
     variables(NamedRight, RightVariables),
@@ -83,12 +88,12 @@ smatch(Left, Right, Score) :-
     length(MappedAnswer, MappedLength),
     length(NamedRight, RightLength),
     format("Mapping ~w,  ~n, which resulted in ~w, ~w ~n", [Map, MappedLength, RightLength]).
-smatch(Left, Right, Score) :- smatch(Right, Left, Score) .
+smatch_dumb(Left, Right, Score) :- smatch_dumb(Right, Left, Score) .
 
-compare_files(File1, File2, Scores) :-
+compare_files_dumb(File1, File2, Scores) :-
     triples_from_file(File1, Triples1),
     triples_from_file(File2, Triples2),
-    maplist(smatch, Triples1, Triples2, Scores).
+    maplist(smatch_dumb, Triples1, Triples2, Scores).
 
 constraint_dir(left, V, SumVar, v(V, SumVar)).
 constraint_dir(right, V, SumVar, v(SumVar, V)).
@@ -101,8 +106,6 @@ variables_constraints(LeftVariables, RightVariables, Constraints) :-
     maplist(sum_constraints(right, LeftVariables), RightVariables, ConstraintsB),
     append(ConstraintsA, ConstraintsB, Constraints).
 
-
-
 pair(X, Y, X - Y).
 
 cartesian_one_side(Vars, Const, Out) :-
@@ -111,8 +114,6 @@ cartesian_one_side(Vars, Const, Out) :-
 cartesian(X, Y, XY) :-
      maplist(cartesian_one_side(Y), X, Matrix),
      foldl(append, Matrix, [], XY).
-
-
 
 % code kind of spaghetti, but basically, since I wanted to use tfilter
 % I have to refeify it ,and I also have to split on the cases where
@@ -142,8 +143,6 @@ right_vars_constraints([Pair | Rest] , Ret) :-
     (Pair = triple(_, _, constant(_)) - triple(_, _, constant(_))),
     right_vars_constraints(Rest, Ret).
 
-
-
 triple_constraints(TriplesA, TriplesB, Constraints, SameRelation) :-
     cartesian(TriplesA, TriplesB, Product),
     tfilter(same_relation_t, Product, SameRelation),
@@ -155,8 +154,6 @@ my_call(Constraint, Old, New) :-
     % write("doing stuff now"), nl,
     call(Constraint, Old, New).
 
-
-
 solve_constraints(TriplesA, TriplesB, NumMatches) :-
     variables(TriplesA, VarsA),
     variables(TriplesB, VarsB),
@@ -167,5 +164,16 @@ solve_constraints(TriplesA, TriplesB, NumMatches) :-
     foldl(call, All, S0, Folded),
     maximize(MaximizeVars, Folded, Max),
     maplist(variable_value(Max), MaximizeVars, SolvedVals),
-    sum_list(SolvedVals, NumMatches)
-    .
+    sum_list(SolvedVals, NumMatches) .
+
+compare_files(FileA, FileB, Score) :-
+    triples_from_file(FileA, TriplesA),
+    triples_from_file(FileB, TriplesB),
+    maplist(solve_constraints, TriplesA, TriplesB, Matches),
+    sum_list(Matches, NumMatch),
+    maplist(length, TriplesA, Anums),
+    sum_list(Anums, NumA),
+    maplist(length, TriplesB, Bnums),
+    sum_list(Bnums, NumB),
+    format("Matches: ~w,~nTriplesA: ~w~nTriplesB:~w~n", [Matches, Anums, Bnums]),
+    f1_formula(NumMatch rdiv NumA, NumMatch rdiv NumB, Score).
