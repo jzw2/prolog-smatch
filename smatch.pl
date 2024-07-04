@@ -6,6 +6,7 @@
 :- use_module(library(dif)).
 :- use_module(library(reif)).
 :- use_module(library(simplex)).
+:- use_module(library(pairs)).
 
 
 var_in_triples(Triples, X) :-
@@ -205,3 +206,21 @@ neighbor_mappings(Unmapped, Mapping, Neighbors) :-
     findall(X, move_unmapped(Mapping, Unmapped, X), Move),
     findall(X, swap_mapping(Mapping, X), Swap),
     append(Move, Swap, Neighbors).
+
+find_unmapped(Mapping, AllVars, Unmapped) :-
+    findall(X, (member(X, AllVars), (\+ member(_-X, Mapping))), Unmapped).
+
+
+num_matches(Triples1, Triples2, Mapping, Matches) :-
+    apply_mapping(Triples1, Mapping, Applied),
+    sort(Applied, SortApplied),
+    sort(Triples2, SortTriples2),
+    intersection(SortApplied, SortTriples2, Matches).
+
+next_optimum_mapping(Triples1, Triples2, Mapping, AllVars, NextMapping) :-
+    find_unmapped(Mapping, AllVars, Unmapped),
+    neighbor_mappings(Unmapped, Mapping, Neighbors),
+    map_list_to_pairs(num_matches(Triples1, Triples2), Neighbors, Pairs), % for some reason it maps the result as a key instead of a value
+    pairs_keys(Pairs, Matches),
+    list_max(Matches, Max),
+    member(Max-NextMapping, Pairs).
