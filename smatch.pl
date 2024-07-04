@@ -164,7 +164,8 @@ solve_constraints(TriplesA, TriplesB, NumMatches) :-
     foldl(call, All, S0, Folded),
     maximize(MaximizeVars, Folded, Max),
     maplist(variable_value(Max), MaximizeVars, SolvedVals),
-    sum_list(SolvedVals, NumMatches) .
+    sum_list(SolvedVals, NumMatches),
+    format("Solved Match: ~w~n", [NumMatches]).
 
 compare_files(FileA, FileB, Score) :-
     triples_from_file(FileA, TriplesA),
@@ -177,3 +178,30 @@ compare_files(FileA, FileB, Score) :-
     sum_list(Bnums, NumB),
     format("Matches: ~w,~nTriplesA: ~w~nTriplesB:~w~n", [Matches, Anums, Bnums]),
     f1_formula(NumMatch rdiv NumA, NumMatch rdiv NumB, Score).
+
+pair_match(X, Y, X-_, X-Y).
+pair_match(X1, _, X-Z, X-Z) :- dif(X1, X).
+
+% finds a mapping that has left side X, and change it to a new Y
+remap(Mapping, X, Y, New) :-
+    maplist(pair_match(X, Y), Mapping, New).
+
+
+% first case: move to an unmapped variable
+move_unmapped(Mapping, Unmapped, NewMapping) :-
+    member(X-_, Mapping),
+    member(Var, Unmapped),
+    remap(Mapping, X, Var, NewMapping).
+
+% second case: swap a mapping
+swap_mapping(Mapping, NewMapping) :-
+    member(X1-Y1, Mapping),
+    member(X2-Y2, Mapping),
+    dif(X1, X2),
+    remap(Mapping, X1, Y2, IntermediateMapping),
+    remap(IntermediateMapping, X2, Y1, NewMapping).
+
+neighbor_mappings(Unmapped, Mapping, Neighbors) :-
+    findall(X, move_unmapped(Mapping, Unmapped, X), Move),
+    findall(X, swap_mapping(Mapping, X), Swap),
+    append(Move, Swap, Neighbors).
