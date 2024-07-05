@@ -24,7 +24,9 @@ var_mapping(Domain, [Y | RangeRest], [X-Y | Rest]) :-
 variables(Triples, Variables) :-
     setof(X, var_in_triples(Triples, X), Variables).
 
-intersection(Left, Right, Amount) :-
+intersection(UnsortedLeft, UnsortedRight, Amount) :-
+    sort(UnsortedLeft, Left),
+    sort(UnsortedRight, Right),
     ord_intersection(Left, Right, Intersect, _),
     length(Intersect, Amount).
 
@@ -41,12 +43,6 @@ f1_formula(P, R, Score) :-
     Score is 2 * (P * R) rdiv (P + R).
 
 
-f1(UnsortedLeft, UnsortedRight, Score) :-
-    sort(UnsortedLeft, Left),
-    sort(UnsortedRight, Right),
-    precision(Left, Right, P),
-    recall(Left, Right, R),
-    f1_formula(P, R, Score).
 
 
 apply_left(triple(X, Mid, Right), X, Y, triple(Y, Mid, Right)).
@@ -62,6 +58,8 @@ apply_mapping(Old, Mapping, New) :-
     maplist(apply_single(Mapping), Old, New).
 
 
+% name spacing is necessary because application would otherwise potentially chain mappings.
+% this way, variables are guaranteed to be unique
 name_space_triple(Name, triple(V1, Middle, constant(V2)), triple(NewV1, Middle, constant(V2))) :-
     NewV1 =.. [Name, V1].
 name_space_triple(Name, triple(V1, Middle, variable(V2)), triple(NewV1, Middle, variable(NewV2))) :-
@@ -72,24 +70,17 @@ name_space_triples(Left, Right, NewLeft, NewRight) :-
     maplist(name_space_triple(left), Left, NewLeft),
     maplist(name_space_triple(right), Right, NewRight).
 
-smatch_dumb(Left, Right, Score) :-
+definition(Left, Right, Score) :-
     \+ longer(Left, Right),
     name_space_triples(Left, Right, NamedLeft, NamedRight),
     variables(NamedLeft, LeftVariables),
     variables(NamedRight, RightVariables),
-    $ findall(M, var_mapping(LeftVariables, RightVariables, M), Mappings),
+    findall(M, var_mapping(LeftVariables, RightVariables, M), Mappings),
 
     maplist(apply_mapping(NamedLeft), Mappings, AppliedTriples),
-    maplist(f1(NamedRight), AppliedTriples, F1s),
-    list_max(F1s, Score),
-    % debug info
-    nth0(Index, F1s, Score),
-    nth0(Index, Mappings, Map),
-    nth0(Index, AppliedTriples, MappedAnswer),
-    length(MappedAnswer, MappedLength),
-    length(NamedRight, RightLength),
-    format("Mapping ~w,  ~n, which resulted in ~w, ~w ~n", [Map, MappedLength, RightLength]).
-smatch_dumb(Left, Right, Score) :- longer(Left, Right), smatch_dumb(Right, Left, Score) .
+    $ maplist(intersection(NamedRight), AppliedTriples, Matches),
+    list_max(Matches, Score).
+definition(Left, Right, Score) :- longer(Left, Right), definition(Right, Left, Score) .
 
 compare_files_dumb(File1, File2, Scores) :-
     triples_from_file(File1, Triples1),
