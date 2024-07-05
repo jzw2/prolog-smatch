@@ -151,9 +151,6 @@ triple_constraints(TriplesA, TriplesB, Constraints, SameRelation) :-
     right_vars_constraints(SameRelation, RightConstraints),
     append(LeftConstraints, RightConstraints, Constraints).
 
-my_call(Constraint, Old, New) :-
-    % write("doing stuff now"), nl,
-    call(Constraint, Old, New).
 
 solve_constraints(TriplesA, TriplesB, NumMatches) :-
     variables(TriplesA, VarsA),
