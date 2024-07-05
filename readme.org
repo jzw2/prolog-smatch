@@ -12,12 +12,19 @@ Load the file with
 scryer-prolog smatch.pl
 #+end_src
 
-Currently the only examples are the boy example from the original smatch paper, and =test_input1= from =mtool=
+Current examples are
+- =boy1.txt=, =boy2.txt= from the originial smatch paper
+- =test_input1.txt=, =test_input2.txt= from a python implementation
+- =coli.system.amr=, =coli.gold.amr= from mtool (huge file, I have not been able to caluclate it since it always freezes my computer)
 
 
 #+begin_src
-?- compare_files("boy1.txt", "boy2.txt", X).
+?- compare_files("boy1.txt", "boy2.txt", ilp, X).
 #+end_src
+
+=ilp= is the ILP method and is currently the fastest. You can also change it to =definition= a (slow) direct definition aproach, and =hill_climb= for the hill climbing method.
+
+Note that the hill climbing method by definition is non-deterministic, but due to prolog backtracking, you should (hopefully) be able to go through all potential calculation paths.
 
 
 * Test data sources

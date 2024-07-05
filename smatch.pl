@@ -78,7 +78,7 @@ definition(Left, Right, Score) :-
     findall(M, var_mapping(LeftVariables, RightVariables, M), Mappings),
 
     maplist(apply_mapping(NamedLeft), Mappings, AppliedTriples),
-    $ maplist(intersection(NamedRight), AppliedTriples, Matches),
+    maplist(intersection(NamedRight), AppliedTriples, Matches),
     list_max(Matches, Score).
 definition(Left, Right, Score) :- longer(Left, Right), definition(Right, Left, Score) .
 
@@ -215,7 +215,6 @@ next_optimum_mapping(Triples1, Triples2, Mapping, AllVars, NextMapping, Max) :-
 
 optimum_search(Triples1, Triples2, CurrentMapping, AllVars, CurrentMax, Max) :-
     next_optimum_mapping(Triples1, Triples2, CurrentMapping, AllVars, NextMapping, NextMax),
-    % format("CurrentMax: ~w NextMax: ~w~n", [CurrentMax, NextMax]),
     (CurrentMax >= NextMax, Max = CurrentMax
     ; CurrentMax < NextMax, optimum_search(Triples1, Triples2, NextMapping, AllVars, NextMax, Max)).
 
@@ -234,5 +233,5 @@ hill_climb(Left, Right, Max) :-
     variables(NamedLeft, LeftVariables),
     variables(NamedRight, RightVariables),
     var_mapping(LeftVariables, RightVariables, InitialMapping),
-    optimum_search(NamedLeft, NamedRight, InitialMapping, RightVariables, 0, Max).
-
+    optimum_search(NamedLeft, NamedRight, InitialMapping, RightVariables, 0, Max),
+    format("Solved Match: ~w~n", [Max]).
