@@ -152,7 +152,7 @@ triple_constraints(TriplesA, TriplesB, Constraints, SameRelation) :-
     append(LeftConstraints, RightConstraints, Constraints).
 
 
-solve_constraints(TriplesA, TriplesB, NumMatches) :-
+ilp(TriplesA, TriplesB, NumMatches) :-
     variables(TriplesA, VarsA),
     variables(TriplesB, VarsB),
     variables_constraints(VarsA, VarsB, Var),
@@ -165,10 +165,10 @@ solve_constraints(TriplesA, TriplesB, NumMatches) :-
     sum_list(SolvedVals, NumMatches),
     format("Solved Match: ~w~n", [NumMatches]).
 
-compare_files(FileA, FileB, Score) :-
+compare_files(FileA, FileB, Method, Score) :-
     triples_from_file(FileA, TriplesA),
     triples_from_file(FileB, TriplesB),
-    maplist(solve_constraints, TriplesA, TriplesB, Matches),
+    maplist(Method, TriplesA, TriplesB, Matches),
     sum_list(Matches, NumMatch),
     maplist(length, TriplesA, Anums),
     sum_list(Anums, NumA),
@@ -245,14 +245,3 @@ hill_climb(Left, Right, Max) :-
     var_mapping(LeftVariables, RightVariables, InitialMapping),
     optimum_search(NamedLeft, NamedRight, InitialMapping, RightVariables, 0, Max).
 
-compare_files_hill(FileA, FileB, Score) :-
-    triples_from_file(FileA, TriplesA),
-    triples_from_file(FileB, TriplesB),
-    maplist(hill_climb, TriplesA, TriplesB, Matches),
-    sum_list(Matches, NumMatch),
-    maplist(length, TriplesA, Anums),
-    sum_list(Anums, NumA),
-    maplist(length, TriplesB, Bnums),
-    sum_list(Bnums, NumB),
-    format("Matches: ~w,~nTriplesA: ~w~nTriplesB:~w~n", [Matches, Anums, Bnums]),
-    f1_formula(NumMatch rdiv NumA, NumMatch rdiv NumB, Score).
