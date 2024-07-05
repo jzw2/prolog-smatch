@@ -73,10 +73,10 @@ name_space_triples(Left, Right, NewLeft, NewRight) :-
     maplist(name_space_triple(right), Right, NewRight).
 
 smatch_dumb(Left, Right, Score) :-
+    \+ longer(Left, Right),
     name_space_triples(Left, Right, NamedLeft, NamedRight),
     variables(NamedLeft, LeftVariables),
     variables(NamedRight, RightVariables),
-    $ var_mapping(LeftVariables, RightVariables,_), !, % make sure its teh right direction
     $ findall(M, var_mapping(LeftVariables, RightVariables, M), Mappings),
 
     maplist(apply_mapping(NamedLeft), Mappings, AppliedTriples),
@@ -89,7 +89,7 @@ smatch_dumb(Left, Right, Score) :-
     length(MappedAnswer, MappedLength),
     length(NamedRight, RightLength),
     format("Mapping ~w,  ~n, which resulted in ~w, ~w ~n", [Map, MappedLength, RightLength]).
-smatch_dumb(Left, Right, Score) :- smatch_dumb(Right, Left, Score) .
+smatch_dumb(Left, Right, Score) :- longer(Left, Right), smatch_dumb(Right, Left, Score) .
 
 compare_files_dumb(File1, File2, Scores) :-
     triples_from_file(File1, Triples1),
