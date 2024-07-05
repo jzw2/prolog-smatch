@@ -217,10 +217,45 @@ num_matches(Triples1, Triples2, Mapping, Matches) :-
     sort(Triples2, SortTriples2),
     intersection(SortApplied, SortTriples2, Matches).
 
-next_optimum_mapping(Triples1, Triples2, Mapping, AllVars, NextMapping) :-
+next_optimum_mapping(Triples1, Triples2, Mapping, AllVars, NextMapping, Max) :-
     find_unmapped(Mapping, AllVars, Unmapped),
     neighbor_mappings(Unmapped, Mapping, Neighbors),
     map_list_to_pairs(num_matches(Triples1, Triples2), Neighbors, Pairs), % for some reason it maps the result as a key instead of a value
     pairs_keys(Pairs, Matches),
     list_max(Matches, Max),
     member(Max-NextMapping, Pairs).
+
+optimum_search(Triples1, Triples2, CurrentMapping, AllVars, CurrentMax, Max) :-
+    next_optimum_mapping(Triples1, Triples2, CurrentMapping, AllVars, NextMapping, NextMax),
+    % format("CurrentMax: ~w NextMax: ~w~n", [CurrentMax, NextMax]),
+    (CurrentMax >= NextMax, Max = CurrentMax
+    ; CurrentMax < NextMax, optimum_search(Triples1, Triples2, NextMapping, AllVars, NextMax, Max)).
+
+% longer if A is strictly longer than B
+longer(A, B) :-
+    length(A, LA),
+    length(B, LB),
+    LA > LB.
+
+hill_climb(Left, Right, Max) :-
+    longer(Left, Right),
+    hill_climb(Right, Left, Max).
+hill_climb(Left, Right, Max) :-
+    \+ longer(Left, Right),
+    name_space_triples(Left, Right, NamedLeft, NamedRight),
+    variables(NamedLeft, LeftVariables),
+    variables(NamedRight, RightVariables),
+    var_mapping(LeftVariables, RightVariables, InitialMapping),
+    optimum_search(NamedLeft, NamedRight, InitialMapping, RightVariables, 0, Max).
+
+compare_files_hill(FileA, FileB, Score) :-
+    triples_from_file(FileA, TriplesA),
+    triples_from_file(FileB, TriplesB),
+    maplist(hill_climb, TriplesA, TriplesB, Matches),
+    sum_list(Matches, NumMatch),
+    maplist(length, TriplesA, Anums),
+    sum_list(Anums, NumA),
+    maplist(length, TriplesB, Bnums),
+    sum_list(Bnums, NumB),
+    format("Matches: ~w,~nTriplesA: ~w~nTriplesB:~w~n", [Matches, Anums, Bnums]),
+    f1_formula(NumMatch rdiv NumA, NumMatch rdiv NumB, Score).
